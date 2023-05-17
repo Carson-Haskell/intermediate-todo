@@ -36,7 +36,7 @@ function reducer(state, { type, payload }) {
 const date = new Date();
 const INITIAL_TODOS = [
   {
-    title: "Take out the trash",
+    title: "Complete Homework Assignment",
     completed: false,
     id: crypto.randomUUID(),
     date: date.toJSON().slice(0, 10),
@@ -45,12 +45,42 @@ const INITIAL_TODOS = [
 
 export default function TodoProvider({ children }) {
   const [storedTodos, setStoredTodos] = useLocalStorage("todos", []);
+  const [selectedTodos, setSelectedTodos] = React.useState("All");
   const [todos, dispatch] = React.useReducer(
     reducer,
     storedTodos || INITIAL_TODOS
   );
 
   React.useEffect(() => setStoredTodos(todos), [todos]);
+
+  const getFilteredTodos = React.useCallback(
+    todos => {
+      let newTodos = [];
+      if (selectedTodos === "All") newTodos = todos;
+
+      if (selectedTodos === "Today") {
+        const today = new Date().toJSON().slice(0, 10);
+
+        newTodos = todos.filter(todo => {
+          if (todo.date === today) return todo;
+        });
+      }
+
+      if (selectedTodos === "Month") {
+        newTodos = todos.filter(todo => {
+          const month = new Date().toJSON().slice(5, 7);
+          if (todo.date.slice(5, 7) === month) return todo;
+        });
+      }
+
+      return newTodos;
+    },
+    [selectedTodos]
+  );
+
+  function updateSelectedTodos(value) {
+    setSelectedTodos(value);
+  }
 
   function addNewTodo(title, date) {
     dispatch({ type: "add", payload: { title, date } });
@@ -71,6 +101,9 @@ export default function TodoProvider({ children }) {
         addNewTodo,
         completeTodo,
         deleteTodo,
+        getFilteredTodos,
+        selectedTodos,
+        updateSelectedTodos,
       }}
     >
       {children}
